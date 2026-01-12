@@ -17,3 +17,31 @@ export enum SendingStatus {
   Sending,
   Error
 }
+
+export type UserRole = 'OWNER' | 'ADMIN' | 'TRUSTED_EDITOR' | 'USER';
+
+export interface User {
+  id: string;
+  username: string;
+  role: UserRole;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'BANNED';
+  joinedAt: number;
+  lastActiveAt: number;
+  totalTimeSpent: number; // in seconds
+}
+
+export interface AccessRequest {
+  id: string;
+  userId: string;
+  username: string;
+  timestamp: number;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+}
+
+export interface UsageLog {
+  id: string;
+  userId: string;
+  username: string;
+  action: 'LOGIN' | 'LOGOUT';
+  timestamp: number;
+}
