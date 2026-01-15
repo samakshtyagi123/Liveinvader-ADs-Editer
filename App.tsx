@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { sendMessageToGemini } from './services/geminiService';
-import { getUsers, saveUser, getRequests, createRequest, updateRequestStatus, updateUserRole, updateUserStatus, logUsage, updateTotalTime, getLogs } from './services/dataService';
-import { Message, SendingStatus, User, UserRole, AccessRequest, UsageLog } from './types';
+import { getUsers, saveUser, getRequests, createRequest, updateRequestStatus, updateUserRole, updateUserStatus, logUsage, updateTotalTime, getLogs, saveFeedback, getFeedback } from './services/dataService';
+import { Message, SendingStatus, User, UserRole, AccessRequest, UsageLog, Feedback } from './types';
 
 // --- ICONS ---
-const ShieldIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.746 3.746 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" /></svg>;
+const ShieldIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.746 3.746 0 011.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" /></svg>;
 const UserGroupIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>;
 const ChartBarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>;
 const LockClosedIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>;
 const SparkleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813a3.75 3.75 0 002.576-2.576l.813-2.846A.75.75 0 019 4.5zM9 15a.75.75 0 01.75.75v1.5h1.5a.75.75 0 010 1.5h-1.5v1.5a.75.75 0 01-1.5 0v-1.5h-1.5a.75.75 0 010-1.5h1.5v-1.5A.75.75 0 019 15z" clipRule="evenodd" /></svg>;
 const BanIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>;
 const CheckCircleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+const FeedbackIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" /></svg>;
 
 // --- REUSABLE COMPONENTS ---
 
@@ -151,17 +152,91 @@ const PendingScreen: React.FC = () => (
     </div>
 );
 
+// --- FEEDBACK MODAL ---
+const FeedbackModal: React.FC<{ isOpen: boolean; onClose: () => void; currentUser: User }> = ({ isOpen, onClose, currentUser }) => {
+    const [feedbackText, setFeedbackText] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitted, setSubmitted] = useState(false);
+
+    if (!isOpen) return null;
+
+    const handleSubmit = () => {
+        if (!feedbackText.trim()) return;
+        setIsSubmitting(true);
+        const feedback: Feedback = {
+            id: Date.now().toString(),
+            userId: currentUser.id,
+            username: currentUser.username,
+            text: feedbackText,
+            timestamp: Date.now()
+        };
+        saveFeedback(feedback);
+        setTimeout(() => {
+            setIsSubmitting(false);
+            setSubmitted(true);
+            setTimeout(() => {
+                setSubmitted(false);
+                setFeedbackText('');
+                onClose();
+            }, 1500);
+        }, 800);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <NeonCard className="w-full max-w-md bg-zinc-900 border-purple-500/30">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold text-purple-400">SUBMIT FEEDBACK</h3>
+                    <button onClick={onClose} className="text-zinc-500 hover:text-white">✕</button>
+                </div>
+                {submitted ? (
+                    <div className="text-center py-8">
+                        <div className="text-green-400 text-4xl mb-2 flex justify-center"><CheckCircleIcon /></div>
+                        <p className="text-white font-bold">Received.</p>
+                        <p className="text-zinc-500 text-sm">Thank you for your input.</p>
+                    </div>
+                ) : (
+                    <>
+                        <textarea
+                            value={feedbackText}
+                            onChange={(e) => setFeedbackText(e.target.value)}
+                            placeholder="Report bugs, suggest features, or share your thoughts..."
+                            className="w-full bg-black/50 border border-zinc-700 rounded-lg p-3 text-white placeholder-zinc-600 focus:border-purple-500 outline-none h-32 resize-none mb-4"
+                        />
+                        <div className="flex justify-end gap-2">
+                            <button onClick={onClose} className="px-4 py-2 text-zinc-400 hover:text-white text-sm">Cancel</button>
+                            <button 
+                                onClick={handleSubmit} 
+                                disabled={isSubmitting || !feedbackText.trim()}
+                                className={`px-4 py-2 rounded text-sm font-bold transition-all ${
+                                    isSubmitting || !feedbackText.trim()
+                                    ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                                    : 'bg-purple-900/50 text-purple-300 hover:bg-purple-800/50 border border-purple-500/30 shadow-[0_0_10px_rgba(168,85,247,0.2)]'
+                                }`}
+                            >
+                                {isSubmitting ? 'TRANSMITTING...' : 'SEND FEEDBACK'}
+                            </button>
+                        </div>
+                    </>
+                )}
+            </NeonCard>
+        </div>
+    );
+};
+
 // --- ADMIN PANEL ---
 
 const AdminPanel: React.FC<{ currentUser: User; onClose: () => void }> = ({ currentUser, onClose }) => {
-    const [tab, setTab] = useState<'OVERVIEW' | 'USERS' | 'REQUESTS'>('OVERVIEW');
+    const [tab, setTab] = useState<'OVERVIEW' | 'USERS' | 'REQUESTS' | 'FEEDBACK'>('OVERVIEW');
     const [users, setUsers] = useState<User[]>(getUsers());
     const [requests, setRequests] = useState<AccessRequest[]>(getRequests());
+    const [feedbacks, setFeedbacks] = useState<Feedback[]>(getFeedback());
     
     // Refresh data
     const refresh = () => {
         setUsers(getUsers());
         setRequests(getRequests());
+        setFeedbacks(getFeedback());
     };
 
     const handleApprove = (reqId: string) => {
@@ -228,6 +303,9 @@ const AdminPanel: React.FC<{ currentUser: User; onClose: () => void }> = ({ curr
                     <button onClick={() => setTab('REQUESTS')} className={`p-3 rounded-lg text-left text-sm flex items-center gap-3 transition-all ${tab === 'REQUESTS' ? 'bg-cyan-900/30 text-cyan-300 border border-cyan-500/30' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}>
                         <div className="relative"><ShieldIcon /> {requests.filter(r => r.status === 'PENDING').length > 0 && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>}</div>
                          ACCESS REQUESTS
+                    </button>
+                    <button onClick={() => setTab('FEEDBACK')} className={`p-3 rounded-lg text-left text-sm flex items-center gap-3 transition-all ${tab === 'FEEDBACK' ? 'bg-cyan-900/30 text-cyan-300 border border-cyan-500/30' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}>
+                        <FeedbackIcon /> USER FEEDBACK
                     </button>
                 </aside>
 
@@ -359,6 +437,24 @@ const AdminPanel: React.FC<{ currentUser: User; onClose: () => void }> = ({ curr
                             </table>
                         </div>
                     )}
+
+                    {tab === 'FEEDBACK' && (
+                        <div className="space-y-4">
+                            <h2 className="text-xl font-bold mb-6 text-purple-400">INCOMING TRANSMISSIONS</h2>
+                            {feedbacks.length === 0 && <p className="text-zinc-600 italic">No feedback signals received.</p>}
+                            <div className="grid grid-cols-1 gap-4">
+                                {feedbacks.slice().reverse().map(fb => (
+                                    <NeonCard key={fb.id} className="border-purple-500/20 hover:border-purple-500/40">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h3 className="font-bold text-white">{fb.username}</h3>
+                                            <span className="text-xs text-zinc-500">{new Date(fb.timestamp).toLocaleString()}</span>
+                                        </div>
+                                        <p className="text-zinc-300 text-sm whitespace-pre-wrap">{fb.text}</p>
+                                    </NeonCard>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </main>
             </div>
         </div>
@@ -370,6 +466,7 @@ const AdminPanel: React.FC<{ currentUser: User; onClose: () => void }> = ({ curr
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [view, setView] = useState<'AUTH' | 'APP' | 'ADMIN' | 'PENDING'>('AUTH');
+  const [showFeedback, setShowFeedback] = useState(false);
   
   // Chat State
   const [messages, setMessages] = useState<Message[]>([]);
@@ -486,6 +583,11 @@ const App: React.FC = () => {
   // --- MAIN APP VIEW ---
   return (
     <div className="flex flex-col h-screen bg-zinc-900 text-zinc-100 font-sans overflow-hidden">
+      {/* Feedback Modal */}
+      {currentUser && (
+        <FeedbackModal isOpen={showFeedback} onClose={() => setShowFeedback(false)} currentUser={currentUser} />
+      )}
+
       {/* Header */}
       <header className="flex-none bg-zinc-900 border-b border-red-900/30 p-4 shadow-lg z-10 flex justify-between items-center">
         <div className="flex items-center gap-3">
@@ -505,7 +607,12 @@ const App: React.FC = () => {
                  </button>
              )}
              
-             <div className="text-right mr-2">
+             {/* Feedback Button */}
+             <button onClick={() => setShowFeedback(true)} className="text-xs bg-zinc-800 text-zinc-300 border border-zinc-600 px-3 py-1.5 rounded hover:bg-zinc-700 transition-all flex items-center gap-2" title="Send Feedback">
+                <FeedbackIcon />
+             </button>
+             
+             <div className="text-right mr-2 hidden sm:block">
                  <div className="text-xs font-bold text-white">{currentUser.username}</div>
                  <div className="text-[10px] text-zinc-500 uppercase">{currentUser.role.replace('_', ' ')}</div>
              </div>

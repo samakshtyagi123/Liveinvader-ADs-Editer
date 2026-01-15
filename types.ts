@@ -45,3 +45,11 @@ export interface UsageLog {
   action: 'LOGIN' | 'LOGOUT';
   timestamp: number;
 }
+
+export interface Feedback {
+  id: string;
+  userId: string;
+  username: string;
+  text: string;
+  timestamp: number;
+}

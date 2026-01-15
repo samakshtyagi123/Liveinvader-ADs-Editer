@@ -1,8 +1,9 @@
-import { User, UserRole, AccessRequest, UsageLog } from '../types';
+import { User, UserRole, AccessRequest, UsageLog, Feedback } from '../types';
 
 const USERS_KEY = 'li_ai_users';
 const REQUESTS_KEY = 'li_ai_requests';
 const LOGS_KEY = 'li_ai_logs';
+const FEEDBACK_KEY = 'li_ai_feedback';
 
 // Initialize Owner if not exists
 const initOwner = () => {
@@ -116,6 +117,17 @@ export const updateTotalTime = (userId: string, seconds: number) => {
         user.lastActiveAt = Date.now();
         localStorage.setItem(USERS_KEY, JSON.stringify(users));
     }
+};
+
+export const getFeedback = (): Feedback[] => {
+  const data = localStorage.getItem(FEEDBACK_KEY);
+  return data ? JSON.parse(data) : [];
+};
+
+export const saveFeedback = (feedback: Feedback) => {
+  const feedbacks = getFeedback();
+  feedbacks.push(feedback);
+  localStorage.setItem(FEEDBACK_KEY, JSON.stringify(feedbacks));
 };
 
 // Initial setup
