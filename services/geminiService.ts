@@ -8,11 +8,10 @@ export const startChat = async (): Promise<Chat | null> => {
         const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
         
         chatSession = ai.chats.create({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-2-flash',
             config: {
                 systemInstruction: LIFEINVADER_POLICY_DATA,
-                temperature: 0.2,
-                thinkingConfig: { thinkingBudget: 0 }
+                temperature: 0.2
             },
         });
         return chatSession;
